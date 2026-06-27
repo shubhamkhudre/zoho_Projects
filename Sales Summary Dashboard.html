@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sales Summary Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+:root {
+  --bg: #07111f;
+  --bg2: #0b1f35;
+  --surface: rgba(255,255,255,.08);
+  --surface2: rgba(255,255,255,.12);
+  --stroke: rgba(255,255,255,.12);
+  --text: #f8fbff;
+  --muted: #a6b4c8;
+  --accent: #38d6c6;
+  --accent2: #60a5fa;
+  --good: #22c55e;
+  --warn: #f59e0b;
+  --bad: #fb7185;
+  --shadow: 0 22px 60px rgba(0,0,0,.35);
+  --cardGrad: linear-gradient(135deg, rgba(56,214,198,.20), rgba(96,165,250,.14));
+}
+[data-theme="light"] {
+  --bg: #eef4ff;
+  --bg2: #ffffff;
+  --surface: rgba(255,255,255,.88);
+  --surface2: rgba(255,255,255,.98);
+  --stroke: rgba(15,23,42,.10);
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #0f766e;
+  --accent2: #2563eb;
+  --good: #15803d;
+  --warn: #b45309;
+  --bad: #be123c;
+  --shadow: 0 22px 60px rgba(15,23,42,.12);
+  --cardGrad: linear-gradient(135deg, rgba(15,118,110,.12), rgba(37,99,235,.10));
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(56,214,198,.20), transparent 36rem),
+    radial-gradient(circle at top right, rgba(96,165,250,.18), transparent 42rem),
+    linear-gradient(160deg, var(--bg), var(--bg2));
+  min-height: 100vh;
+}
+.app {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 26px;
+}
+.hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 22px;
+  align-items: center;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+  border: 1px solid var(--stroke);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+.eyebrow {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: .18em;
+  font-size: 12px;
+  font-weight: 800;
+}
+h1 {
+  margin: 8px 0 8px;
+  font-size: clamp(30px, 4vw, 54px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+.subtitle {
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 850px;
+  line-height: 1.65;
+}
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  padding: 9px 13px;
+  font-size: 13px;
+  font-weight: 650;
+}
+.controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.control {
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  border-radius: 18px;
+  padding: 12px 14px;
+}
+.control label {
+  display:block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 6px;
+  font-weight: 750;
+}
+select, input {
+  width: 100%;
+  border: none;
+  outline: none;
+  border-radius: 12px;
+  background: var(--surface2);
+  color: var(--text);
+  padding: 10px 11px;
+  font-weight: 700;
+}
+select option { color: #0f172a; }
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+}
+.kpi {
+  position: relative;
+  overflow: hidden;
+  min-height: 124px;
+  padding: 18px;
+  border-radius: 24px;
+  background: var(--cardGrad);
+  border: 1px solid var(--stroke);
+  box-shadow: 0 14px 34px rgba(0,0,0,.12);
+}
+.kpi::before {
+  content: "";
+  position: absolute;
+  inset: -60% -35% auto auto;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(255,255,255,.24), transparent 65%);
+  transform: rotate(24deg);
+}
+.kpi .label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+.kpi .value {
+  font-size: clamp(24px, 2.5vw, 34px);
+  font-weight: 900;
+  letter-spacing: -.03em;
+}
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 22px 0 14px;
+}
+.tabBtn {
+  border: 1px solid var(--stroke);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 11px 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.tabBtn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  border-color: transparent;
+}
+.tab { display:none; }
+.tab.active { display:block; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  border-radius: 24px;
+  padding: 16px;
+  min-height: 420px;
+  box-shadow: 0 18px 44px rgba(0,0,0,.16);
+  backdrop-filter: blur(14px);
+}
+.panel.small { min-height: 360px; }
+.panel.full { grid-column: span 12; }
+.panel.half { grid-column: span 6; }
+.panel.third { grid-column: span 4; }
+.panel.twoThird { grid-column: span 8; }
+.panelHead {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom: 8px;
+}
+.panel h2 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -.02em;
+}
+.panel p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.chart {
+  width: 100%;
+  height: 345px;
+}
+.chart.tall { height: 460px; }
+.insightGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 0 0 16px;
+}
+.insight {
+  border: 1px solid var(--stroke);
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 15px;
+}
+.insight small {
+  color: var(--muted);
+  font-weight: 800;
+}
+.insight strong {
+  display:block;
+  margin-top: 8px;
+  font-size: 20px;
+}
+.tableBox {
+  overflow:auto;
+  max-height: 580px;
+  border-radius: 18px;
+  border: 1px solid var(--stroke);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 1180px;
+}
+th, td {
+  padding: 10px 9px;
+  border-bottom: 1px solid var(--stroke);
+  text-align: right;
+  white-space: nowrap;
+}
+th:nth-child(1), th:nth-child(2), td:nth-child(1), td:nth-child(2) {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: var(--bg2);
+  z-index: 1;
+}
+th:nth-child(2), td:nth-child(2) {
+  left: 95px;
+}
+thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg2);
+  z-index: 2;
+  color: var(--accent);
+}
+.footerNote {
+  color: var(--muted);
+  margin: 22px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+@media(max-width: 1120px) {
+  .hero { grid-template-columns:1fr; }
+  .controls { grid-template-columns: repeat(2, 1fr); }
+  .kpis { grid-template-columns: repeat(3, 1fr); }
+  .panel.half, .panel.third, .panel.twoThird { grid-column: span 12; }
+  .insightGrid { grid-template-columns: repeat(2, 1fr); }
+}
+@media(max-width: 700px) {
+  .app { padding: 14px; }
+  .controls, .kpis, .insightGrid { grid-template-columns: 1fr; }
+  .hero { padding: 18px; border-radius: 20px; }
+}
+</style>
+</head>
+<body data-theme="dark">
+<div class="app">
+  <section class="hero">
+    <div>
+      <div class="eyebrow"></div>
+      <h1>Sales Summary</h1>
+      <div class="subtitle">
+        A modern, interactive version of the Sales Summary dashboard for Invoice Fiscal Year 25-26. Use the controls to switch amount/quantity, change chart style, filter states, and toggle the visual theme.
+      </div>
+      <div class="badgeRow">
+        <span class="badge">FY: 25-26</span>
+        <span class="badge">Hover enabled</span>
+        <span class="badge">Legend toggle enabled</span>
+        <span class="badge">Export chart image from modebar</span>
+      </div>
+    </div>
+    <div class="badge"></div>
+  </section>
+
+  <section class="controls">
+    <div class="control">
+      <label>Metric</label>
+      <select id="metric">
+        <option value="Amount">Amount (Lac)</option>
+        <option value="Qty">Quantity (MT)</option>
+      </select>
+    </div>
+    <div class="control">
+      <label>Trend chart style</label>
+      <select id="trendStyle">
+        <option value="line">Smooth line + markers</option>
+        <option value="bar">Grouped bar</option>
+      </select>
+    </div>
+    <div class="control">
+      <label>State focus</label>
+      <select id="topN">
+        <option value="all">All states</option>
+        <option value="5">Top 5 states</option>
+        <option value="8">Top 8 states</option>
+      </select>
+    </div>
+    <div class="control">
+      <label>Theme</label>
+      <select id="theme">
+        <option value="dark">Midnight executive</option>
+        <option value="light">Clean light</option>
+      </select>
+    </div>
+  </section>
+
+  <section class="kpis" id="kpiRow"></section>
+
+  <section class="insightGrid" id="insights"></section>
+
+  <nav class="tabs">
+    <button class="tabBtn active" data-tab="overview">Overview</button>
+    <button class="tabBtn" data-tab="product">Product & Unit</button>
+    <button class="tabBtn" data-tab="time">Time Trend</button>
+    <button class="tabBtn" data-tab="region">State Analysis</button>
+    <button class="tabBtn" data-tab="details">Summary Tables</button>
+  </nav>
+
+  <section class="tab active" id="overview">
+    <div class="grid">
+      <div class="panel third">
+        <div class="panelHead"><div><h2>Net product mix</h2><p>Product Categories wise net contribution.</p></div></div>
+        <div id="productDonut" class="chart"></div>
+      </div>
+      <div class="panel twoThird">
+        <div class="panelHead"><div><h2>Monthly sales trend</h2><p>Invoice, credit return, and net movement month-wise.</p></div></div>
+        <div id="monthlyTrend" class="chart"></div>
+      </div>
+      <div class="panel full">
+        <div class="panelHead"><div><h2>Top state contribution</h2><p>State-wise net sales ranking with selected metric.</p></div></div>
+        <div id="regionNet" class="chart tall"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab" id="product">
+    <div class="grid">
+      <div class="panel half">
+        <div class="panelHead"><div><h2>Product Categories sales distribution</h2><p>Gross/credit/net comparison by product category.</p></div></div>
+        <div id="productGrouped" class="chart"></div>
+      </div>
+      <div class="panel half">
+        <div class="panelHead"><div><h2>Unit wise sales</h2><p>Unit-wise invoice, credit and net contribution.</p></div></div>
+        <div id="plantGrouped" class="chart"></div>
+      </div>
+      <div class="panel full">
+        <div class="panelHead"><div><h2>Area wise sales distribution</h2><p>South, North and comparison.</p></div></div>
+        <div id="areaGrouped" class="chart tall"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab" id="time">
+    <div class="grid">
+      <div class="panel half">
+        <div class="panelHead"><div><h2>Quarterly distribution</h2><p>Quarter-wise invoice/credit/net trend.</p></div></div>
+        <div id="quarterTrend" class="chart"></div>
+      </div>
+      <div class="panel half">
+        <div class="panelHead"><div><h2>Monthly distribution</h2><p>Month-wise pattern for full FY 25-26.</p></div></div>
+        <div id="monthlyTrend2" class="chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab" id="region">
+    <div class="controls" style="grid-template-columns: 1fr;">
+      <div class="control">
+        <label>Search state/category</label>
+        <input id="regionSearch" placeholder="Type e.g. Maharashtra, Gujarat, Karnataka, South..." />
+      </div>
+    </div>
+    <div class="grid">
+      <div class="panel half">
+        <div class="panelHead"><div><h2>Zone wise sales</h2><p>South, West, East and North comparison.</p></div></div>
+        <div id="regionTypeGrouped" class="chart"></div>
+      </div>
+      <div class="panel half">
+        <div class="panelHead"><div><h2>State wise net ranking</h2><p>Searchable and top-N enabled.</p></div></div>
+        <div id="regionFiltered" class="chart"></div>
+      </div>
+      <div class="panel full">
+        <div class="panelHead"><div><h2>State wise invoice/credit/net distribution</h2><p>Grouped comparison across all states.</p></div></div>
+        <div id="regionGrouped" class="chart tall"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab" id="details">
+    <div class="controls" style="grid-template-columns: repeat(2, minmax(180px,1fr));">
+      <div class="control">
+        <label>Table</label>
+        <select id="tableMetric">
+          <option value="Amount">State & Product Categories summary - Amount</option>
+          <option value="Qty">State & Product Categories summary - Quantity</option>
+        </select>
+      </div>
+      <div class="control">
+        <label>Search table</label>
+        <input id="tableSearch" placeholder="Search any region, category, number..." />
+      </div>
+    </div>
+    <div class="panel full">
+      <div class="panelHead"><div><h2 id="tableTitle">State & Product Categories summary - Amount</h2><p>Searchable summary table extracted from the revised dashboard.</p></div></div>
+      <div id="detailTable" class="tableBox"></div>
+    </div>
+  </section>
+
+  <div class="footerNote">
+  </div>
+</div>
+
+<script>
+const RAW = {"cards":[{"label":"Net Amt (Lac)","value":16694.26},{"label":"Invoice Amt (Lac)","value":18622.93},{"label":"CR Amt (Lac)","value":-1928.67},{"label":"Net Qty (MT)","value":6569.65},{"label":"Invoice Qty (MT)","value":7398.01},{"label":"CR QTY (MT)","value":-828.35}],"datasets":{"productAmount":{"title":"Product Categories Sales Distribution - Amount (Lac)","categories":["Product D","Product A","Product B","Product C"],"series":[{"name":"Invoice Amt (Lac)","values":[4215.09,8806.85,3652.02,1948.96]},{"name":"CR Amt (Lac)","values":[-572.66,-992.53,-208.48,-155.0]},{"name":"Net Amt (Lac)","values":[3642.43,7814.33,3443.54,1793.96]}],"name":"productAmount"},"productQty":{"title":"Product Categories Sales Distribution - QTY(MT)","categories":["Product D","Product A","Product B","Product C"],"series":[{"name":"Invoice Qty (MT)","values":[1202.22,4608.65,1544.37,42.77]},{"name":"CR QTY (MT)","values":[-157.19,-582.76,-85.1,-3.3]},{"name":"Net Qty (MT)","values":[1045.03,4025.89,1459.27,39.46]}],"name":"productQty"},"plantAmount":{"title":"Unit Wise Sales Invoices Amount (Lac)","categories":["South Unit","North Unit","East Unit","West Unit"],"series":[{"name":"Net Amt (Lac)","values":[327.37,7814.95,2041.24,6510.7]},{"name":"Invoice Amt (Lac)","values":[355.57,8807.48,2206.83,7253.05]},{"name":"CR Amt (Lac)","values":[-28.21,-992.53,-165.59,-742.35]}],"name":"plantAmount"},"plantQty":{"title":"Unit Wise Sales Invoices Qty (MT)","categories":["South Unit","North Unit","East Unit","West Unit"],"series":[{"name":"Invoice Qty (MT)","values":[108.06,4608.68,106.98,2574.29]},{"name":"CR QTY (MT)","values":[-12.21,-582.76,-5.12,-228.26]},{"name":"Net Qty (MT)","values":[95.85,4025.92,101.86,2346.03]}],"name":"plantQty"},"quarterAmount":{"title":"Quarterly Sales Distribution","categories":["Q1","Q2","Q3","Q4"],"series":[{"name":"Invoice Amt (Lac)","values":[2200.94,4570.46,4387.58,7463.95]},{"name":"CR Amt (Lac)","values":[-289.38,-352.89,-554.98,-731.42]},{"name":"Net Amt (Lac)","values":[1911.55,4217.57,3832.6,6732.53]}],"name":"quarterAmount"},"quarterQty":{"title":"Quarterly Sales Qty (MT) Distribution","categories":["Q1","Q2","Q3","Q4"],"series":[{"name":"Invoice Qty (MT)","values":[761.39,1807.38,1792.08,3037.15]},{"name":"CR QTY (MT)","values":[-165.1,-148.47,-263.73,-251.05]},{"name":"Net Qty (MT)","values":[596.29,1658.91,1528.35,2786.1]}],"name":"quarterQty"},"monthlyAmount":{"title":"Monthly Sales Invoices Amount (Lac)","categories":["Apr 2025","May 2025","Jun 2025","Jul 2025","Aug 2025","Sep 2025","Oct 2025","Nov 2025","Dec 2025","Jan 2026","Feb 2026","Mar 2026"],"series":[{"name":"Invoice Amt (Lac)","values":[315.84,702.9,1182.2,838.35,1604.11,2128.0,1032.7,1025.46,2329.42,1225.77,1783.24,4454.95]},{"name":"CR Amt (Lac)","values":[-68.5,-201.14,-19.75,-214.0,-43.22,-95.66,-38.06,-268.96,-247.97,-250.55,-216.7,-264.17]},{"name":"Net Amt (Lac)","values":[247.34,501.76,1162.45,624.35,1560.89,2032.34,994.64,756.51,2081.45,975.22,1566.53,4190.78]}],"name":"monthlyAmount"},"monthlyQty":{"title":"Monthly Sales Invoices  Qty (MT)","categories":["Apr 2025","May 2025","Jun 2025","Jul 2025","Aug 2025","Sep 2025","Oct 2025","Nov 2025","Dec 2025","Jan 2026","Feb 2026","Mar 2026"],"series":[{"name":"Invoice Qty (MT)","values":[130.01,281.09,350.3,326.76,629.45,851.18,416.73,421.47,953.88,497.46,606.71,1932.98]},{"name":"CR QTY (MT)","values":[-48.09,-109.35,-7.65,-105.25,-25.7,-17.52,-6.75,-121.27,-135.7,-110.32,-69.63,-71.1]},{"name":"Net Qty (MT)","values":[81.91,171.74,342.65,221.51,603.75,833.66,409.98,300.2,818.18,387.14,537.08,1861.88]}],"name":"monthlyQty"},"regionTypeAmount":{"title":"Zone Wise Sales (Amt) Distribution","categories":["South","West","East","North"],"series":[{"name":"Invoice Amt (Lac)","values":[4482.5,6548.35,2312.05,5280.03]},{"name":"CR Amt (Lac)","values":[-582.61,-631.44,-253.44,-461.18]},{"name":"Net Amt (Lac)","values":[3899.89,5916.9,2058.61,4818.85]}],"name":"regionTypeAmount"},"regionTypeQty":{"title":"Zone Wise Sales (Qty) Distribution","categories":["South","West","East","North"],"series":[{"name":"Invoice Qty (MT)","values":[1452.82,2772.63,1262.09,1910.47]},{"name":"CR QTY (MT)","values":[-188.21,-310.55,-185.0,-144.6]},{"name":"Net Qty (MT)","values":[1264.61,2462.08,1077.09,1765.87]}],"name":"regionTypeQty"},"areaAmount":{"title":"Area Wise Sales (Amt) Distribution","categories":["South","North","Other"],"series":[{"name":"Invoice Amt (Lac)","values":[6548.35,9762.53,2312.05]},{"name":"CR Amt (Lac)","values":[-631.44,-1043.79,-253.44]},{"name":"Net Amt (Lac)","values":[5916.9,8718.74,2058.61]}],"name":"areaAmount"},"areaQty":{"title":"Area Wise Sales (Qty) Distribution","categories":["South","North","Other"],"series":[{"name":"Invoice Qty (MT)","values":[2772.63,3363.29,1262.09]},{"name":"CR QTY (MT)","values":[-310.55,-332.8,-185.0]},{"name":"Net Qty (MT)","values":[2462.08,3030.48,1077.09]}],"name":"areaQty"},"regionAmount":{"title":"State Wise Sales (Amt) Distribution","categories":["Andhra Pradesh","West Bengal","Karnataka","Tamil Nadu","Gujarat","Rajasthan","Uttar Pradesh","Telangana","Maharashtra","Madhya Pradesh","Punjab","Kerala","Haryana"],"series":[{"name":"Invoice Amt (Lac)","values":[1712.43,620.87,2295.68,1271.92,1023.95,2312.05,1063.69,1311.94,2192.46,2043.39,598.25,887.75,1288.55]},{"name":"CR Amt (Lac)","values":[-115.11,-58.22,-198.43,-147.64,-24.55,-253.44,-154.78,-50.59,-415.23,-153.79,-204.8,-114.22,-37.86]},{"name":"Net Amt (Lac)","values":[1597.32,562.66,2097.25,1124.28,999.39,2058.61,908.91,1261.35,1777.22,1889.6,393.44,773.53,1250.68]}],"name":"regionAmount"},"regionQty":{"title":"State Wise Sales (Qty) Distribution","categories":["Andhra Pradesh","West Bengal","Karnataka","Tamil Nadu","Gujarat","Rajasthan","Uttar Pradesh","Telangana","Maharashtra","Madhya Pradesh","Punjab","Kerala","Haryana"],"series":[{"name":"Invoice Qty (MT)","values":[627.05,210.61,679.88,603.54,494.69,1262.09,403.61,379.19,804.03,1078.75,222.86,236.56,395.16]},{"name":"CR QTY (MT)","values":[-42.74,-6.2,-34.38,-67.48,-2.65,-185.0,-57.78,-6.02,-201.59,-95.19,-85.2,-33.0,-11.12]},{"name":"Net Qty (MT)","values":[584.31,204.41,645.5,536.06,492.04,1077.09,345.82,373.17,602.45,983.55,137.66,203.56,384.04]}],"name":"regionQty"}},"amountTable":[["","","Summary","Product D","Product A","Product B","Product C"],["Zone Type","STATES","Gross","SR","Net","Gross","SR","Net","Gross","SR","Net","Gross","SR","Net","Gross","SR","Net"],["North","Andhra Pradesh","1712.43","-115.11","1597.32","376.84","-18.97","357.87","266.93","-0.48","266.45","1059.55","-95.66","963.88","9.11","0.00","9.11"],["","Karnataka","2295.68","-198.43","2097.25","576.69","-101.78","474.92","1100.55","-44.61","1055.94","130.00","-2.77","127.23","488.44","-49.27","439.17"],["","Tamil Nadu","1271.92","-147.64","1124.28","121.69","-20.46","101.22","1097.09","-127.17","969.92","53.13","0.00","53.13","0.01","0.00","0.01"],["North","","5280.03","-461.18","4818.85","1075.22","-141.21","934.01","2464.57","-172.27","2292.31","1242.67","-98.43","1144.24","497.57","-49.27","448.30"],["South","West Bengal","620.87","-58.22","562.66","315.58","-7.45","308.13","132.96","0.00","132.96","30.87","-10.95","19.92","141.46","-39.82","101.64"],["","Uttar Pradesh","1063.69","-154.78","908.91","233.96","-71.16","162.80","620.19","-83.41","536.78","114.14","-0.21","113.94","95.39","0.00","95.39"],["","Telangana","1311.94","-50.59","1261.35","549.62","-12.90","536.72","489.95","-0.54","489.41","162.89","-10.54","152.35","109.49","-26.62","82.87"],["","Punjab","598.25","-204.80","393.44","248.92","-92.79","156.13","240.97","-93.08","147.90","18.64","-8.35","10.29","89.71","-10.59","79.12"],["","Kerala","887.75","-114.22","773.53","569.28","-97.72","471.55","105.74","-16.50","89.25","92.44","0.00","92.44","120.29","0.00","120.29"],["South","","4482.50","-582.61","3899.89","1917.36","-282.02","1635.34","1589.82","-193.52","1396.30","418.97","-30.04","388.94","556.34","-77.03","479.31"],["West","Gujarat","1023.95","-24.55","999.39","114.70","-18.00","96.70","654.30","-1.88","652.42","178.62","0.00","178.62","76.33","-4.68","71.65"],["","Maharashtra","2192.46","-415.23","1777.22","733.61","-112.63","620.98","589.76","-270.35","319.40","537.54","-18.05","519.50","331.54","-14.20","317.34"],["","Madhya Pradesh","2043.39","-153.79","1889.60","149.16","-12.47","136.68","976.94","-94.21","882.73","751.26","-44.01","707.25","166.04","-3.10","162.94"],["","Haryana","1288.55","-37.86","1250.68","225.05","-6.32","218.73","263.32","-6.86","256.46","482.15","-17.95","464.19","318.03","-6.73","311.31"],["West","","6548.35","-631.44","5916.90","1222.51","-149.43","1073.08","2484.31","-373.30","2111.01","1949.57","-80.01","1869.56","891.94","-28.70","863.24"],["East","Rajasthan","2312.05","-253.44","2058.61","","","","2268.14","-253.44","2014.71","40.80","0.00","40.80","3.11","0.00","3.11"],["East","","2312.05","-253.44","2058.61","","","","2268.14","-253.44","2014.71","40.80","0.00","40.80","3.11","0.00","3.11"],["Grand Summary:","","18622.93","-1928.67","16694.26","4215.09","-572.66","3642.43","8806.85","-992.53","7814.33","3652.02","-208.48","3443.54","1948.96","-155.00","1793.96"]],"qtyTable":[["","","Summary","Product D","Product A","Product B","Product C"],["Zone Type","STATES","Invoice","CR","Net","Invoice","CR","Net","Invoice","CR","Net","Invoice","CR","Net","Invoice","CR","Net"],["North","Andhra Pradesh","627.05","-42.74","584.31","85.45","-2.61","82.83","113.98","-0.13","113.85","427.50","-40.00","387.50","0.13","",""],["","Karnataka","679.88","-34.38","645.50","108.83","-12.80","96.03","511.00","-19.63","491.38","51.09","-1.06","50.03","8.97","-0.90","8.07"],["","Tamil Nadu","603.54","-67.48","536.06","37.29","-7.21","30.09","544.25","-60.28","483.97","22.00","","","0.00","",""],["North","","1910.47","-144.60","1765.87","231.57","-22.62","208.96","1169.22","-80.03","1089.20","500.59","-41.05","459.53","9.09","-0.90","8.19"],["South","West Bengal","210.61","-6.20","204.41","129.52","-0.55","128.96","64.83","","","14.07","-5.00","9.07","2.20","-0.65","1.55"],["","Uttar Pradesh","403.61","-57.79","345.82","56.48","-17.30","39.18","304.98","-40.46","264.52","40.73","-0.03","40.71","1.42","",""],["","Telangana","379.19","-6.03","373.17","109.94","-1.30","108.64","216.10","-0.08","216.03","50.93","-4.00","46.93","2.23","-0.65","1.58"],["","Punjab","222.85","-85.20","137.66","93.52","-35.82","57.70","117.83","-45.58","72.25","9.00","-3.50","5.50","2.51","-0.30","2.21"],["","Kerala","236.56","-33.00","203.56","150.79","-25.00","125.79","49.53","-8.00","41.53","34.51","","","1.74","",""],["South","","1452.82","-188.21","1264.61","540.24","-79.97","460.27","753.26","-94.11","659.15","149.23","-12.53","136.70","10.09","-1.60","8.49"],["West","Gujarat","494.69","-2.65","492.04","22.30","-2.00","20.30","371.30","-0.45","370.85","98.38","","","2.71","-0.20","2.51"],["","Maharashtra","804.03","-201.59","602.45","245.65","-35.28","210.37","341.18","-160.03","181.15","209.40","-5.88","203.52","7.81","-0.40","7.41"],["","Madhya Pradesh","1078.75","-95.19","983.55","81.55","-14.77","66.78","581.63","-59.25","522.38","409.60","-21.08","388.53","5.98","-0.10","5.88"],["","Haryana","395.16","-11.12","384.04","80.92","-2.55","78.37","154.08","-3.90","150.17","153.17","-4.56","148.61","7.00","-0.11","6.89"],["West","","2772.63","-310.55","2462.08","430.41","-54.60","375.81","1448.18","-223.63","1224.55","870.55","-31.52","839.03","23.49","-0.81","22.69"],["East","Rajasthan","1262.09","-185.00","1077.09","","","","1238.00","-185.00","1053.00","24.00","","","0.09","",""],["East","","1262.09","-185.00","1077.09","","","","1238.00","-185.00","1053.00","24.00","","","0.09","",""],["Grand Summary:","","7398.01","-828.35","6569.65","1202.22","-157.19","1045.03","4608.65","-582.76","4025.89","1544.37","-85.10","1459.27","42.77","-3.31","39.46"]],"insights":{"topProductAmount":["Product A",7814.33],"topProductQty":["Product A",4025.89],"topRegionAmount":["Karnataka",2097.25],"topMonthAmount":["Mar 2026",4190.78],"topAreaAmount":["South",8718.74]}};
+
+const metricSelect = document.getElementById('metric');
+const trendStyleSelect = document.getElementById('trendStyle');
+const topNSelect = document.getElementById('topN');
+const themeSelect = document.getElementById('theme');
+const regionSearch = document.getElementById('regionSearch');
+const tableMetric = document.getElementById('tableMetric');
+const tableSearch = document.getElementById('tableSearch');
+
+const baseColors = ['#38d6c6', '#fb7185', '#fbbf24', '#60a5fa', '#a78bfa', '#34d399', '#f97316', '#e879f9'];
+
+function cssVar(name) {
+  return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+function layoutBase(title='') {
+  return {
+    title: { text: '', font: { color: cssVar('--text') } },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: cssVar('--text'), family: 'Inter, Segoe UI, Arial' },
+    margin: { l: 54, r: 24, t: 20, b: 70 },
+    legend: { orientation: 'h', y: -0.18, x: 0, font: { color: cssVar('--muted') } },
+    hovermode: 'x unified',
+    xaxis: { gridcolor: 'rgba(148,163,184,.14)', zerolinecolor: 'rgba(148,163,184,.22)' },
+    yaxis: { gridcolor: 'rgba(148,163,184,.14)', zerolinecolor: 'rgba(148,163,184,.22)' },
+    colorway: baseColors,
+  };
+}
+const config = {
+  responsive: true,
+  displaylogo: false,
+  modeBarButtonsToRemove: ['lasso2d','select2d'],
+  toImageButtonOptions: { format: 'png', filename: 'interactive_sales_dashboard', height: 900, width: 1400, scale: 2 }
+};
+
+function fmt(value) {
+  if (value === null || value === undefined || isNaN(value)) return '-';
+  const abs = Math.abs(value);
+  return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value);
+}
+function metricKey(base) {
+  const metric = metricSelect.value;
+  return base + metric;
+}
+function dataset(base) {
+  return RAW.datasets[metricKey(base)];
+}
+function unit() {
+  return metricSelect.value === 'Amount' ? 'Lac' : 'MT';
+}
+function netName(ds) {
+  const found = ds.series.find(s => s.name.toLowerCase().includes('net'));
+  return found ? found.name : ds.series[ds.series.length - 1].name;
+}
+function netValues(ds) {
+  const n = netName(ds);
+  return ds.series.find(s => s.name === n).values;
+}
+function filterDataset(ds, term) {
+  if (!term) return ds;
+  const t = term.toLowerCase();
+  const indices = ds.categories.map((c,i) => String(c).toLowerCase().includes(t) ? i : -1).filter(i => i >= 0);
+  return {
+    ...ds,
+    categories: indices.map(i => ds.categories[i]),
+    series: ds.series.map(s => { return {...s, values: indices.map(i => s.values[i])}; })
+  };
+}
+function topNDataset(ds) {
+  const topN = topNSelect.value;
+  const term = regionSearch ? regionSearch.value.trim() : '';
+  let filtered = filterDataset(ds, term);
+  if (topN === 'all') return filtered;
+  const vals = netValues(filtered);
+  const pairs = filtered.categories.map((c,i)=>({c, i, v: vals[i] || 0})).sort((a,b)=>b.v-a.v).slice(0, parseInt(topN));
+  const indices = pairs.map(p=>p.i);
+  return {
+    ...filtered,
+    categories: indices.map(i => filtered.categories[i]),
+    series: filtered.series.map(s => ({...s, values: indices.map(i=>s.values[i])}))
+  };
+}
+function kpiCards() {
+  const el = document.getElementById('kpiRow');
+  el.innerHTML = RAW.cards.map(card => `
+    <div class="kpi">
+      <div class="label">${card.label}</div>
+      <div class="value">${fmt(card.value)}</div>
+    </div>`).join('');
+}
+function insightCards() {
+  const i = RAW.insights;
+  const html = [
+    ['Top product by amount', `${i.topProductAmount[0]} · ${fmt(i.topProductAmount[1])} Lac`],
+    ['Top product by quantity', `${i.topProductQty[0]} · ${fmt(i.topProductQty[1])} MT`],
+    ['Top state by amount', `${i.topRegionAmount[0]} · ${fmt(i.topRegionAmount[1])} Lac`],
+    ['Highest month by amount', `${i.topMonthAmount[0]} · ${fmt(i.topMonthAmount[1])} Lac`]
+  ].map(x=>`<div class="insight"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');
+  document.getElementById('insights').innerHTML = html;
+}
+function groupedChart(id, ds, orientation='v') {
+  const isH = orientation === 'h';
+  const traces = ds.series.map((s, idx) => {
+    const trace = {
+      type: 'bar',
+      name: s.name,
+      marker: { line: { width: 0 } },
+      hovertemplate: `%{fullData.name}<br>%{${isH ? 'y' : 'x'}}: %{${isH ? 'x' : 'y'}:,.2f}<extra></extra>`
+    };
+    if (isH) {
+      trace.x = s.values;
+      trace.y = ds.categories;
+      trace.orientation = 'h';
+    } else {
+      trace.x = ds.categories;
+      trace.y = s.values;
+    }
+    return trace;
+  });
+  const layout = layoutBase();
+  layout.barmode = 'group';
+  layout.margin = isH ? {l: 120, r: 30, t: 20, b: 64} : layout.margin;
+  layout.yaxis.title = metricSelect.value === 'Amount' ? 'Amount (Lac)' : 'Quantity (MT)';
+  if (isH) {
+    layout.xaxis.title = unit();
+    layout.yaxis = { automargin: true, gridcolor: 'rgba(148,163,184,.08)' };
+  }
+  Plotly.react(id, traces, layout, config);
+}
+function trendChart(id, ds) {
+  const style = trendStyleSelect.value;
+  let traces;
+  if (style === 'bar') {
+    traces = ds.series.map(s => ({
+      type: 'bar',
+      name: s.name,
+      x: ds.categories,
+      y: s.values,
+      hovertemplate: `%{fullData.name}<br>%{x}: %{y:,.2f}<extra></extra>`
+    }));
+  } else {
+    traces = ds.series.map((s, idx) => ({
+      type: 'scatter',
+      mode: 'lines+markers',
+      name: s.name,
+      x: ds.categories,
+      y: s.values,
+      line: { width: idx === 2 ? 4 : 2.5, shape: 'spline' },
+      marker: { size: idx === 2 ? 8 : 6 },
+      fill: s.name.toLowerCase().includes('net') ? 'tozeroy' : 'none',
+      hovertemplate: `%{fullData.name}<br>%{x}: %{y:,.2f}<extra></extra>`
+    }));
+  }
+  const layout = layoutBase();
+  layout.barmode = 'group';
+  layout.yaxis.title = metricSelect.value === 'Amount' ? 'Amount (Lac)' : 'Quantity (MT)';
+  layout.xaxis.tickangle = ds.categories.length > 8 ? -35 : 0;
+  layout.hovermode = 'x unified';
+  Plotly.react(id, traces, layout, config);
+}
+function donutChart(id, ds) {
+  const values = netValues(ds);
+  const trace = {
+    type: 'pie',
+    labels: ds.categories,
+    values,
+    hole: .62,
+    textinfo: 'label+percent',
+    hovertemplate: `%{label}<br>Net: %{value:,.2f} ${unit()}<extra></extra>`,
+    marker: { line: { color: cssVar('--bg'), width: 2 } }
+  };
+  const layout = layoutBase();
+  layout.margin = { l: 10, r: 10, t: 10, b: 20 };
+  layout.showlegend = true;
+  layout.legend = { orientation: 'h', y: -0.12, x: 0 };
+  Plotly.react(id, [trace], layout, config);
+}
+function netRankChart(id, ds) {
+  const focused = topNDataset(ds);
+  const vals = netValues(focused);
+  const pairs = focused.categories.map((c,i)=>({cat:c, val: vals[i] || 0})).sort((a,b)=>a.val-b.val);
+  const trace = {
+    type: 'bar',
+    orientation: 'h',
+    x: pairs.map(p=>p.val),
+    y: pairs.map(p=>p.cat),
+    name: netName(focused),
+    text: pairs.map(p=>fmt(p.val)),
+    textposition: 'auto',
+    hovertemplate: `State: %{y}<br>Net: %{x:,.2f} ${unit()}<extra></extra>`
+  };
+  const layout = layoutBase();
+  layout.margin = { l: 130, r: 30, t: 20, b: 54 };
+  layout.xaxis.title = metricSelect.value === 'Amount' ? 'Net amount (Lac)' : 'Net quantity (MT)';
+  layout.yaxis = { automargin: true, gridcolor: 'rgba(148,163,184,.08)' };
+  Plotly.react(id, [trace], layout, config);
+}
+function renderTable() {
+  const isQty = tableMetric.value === 'Qty';
+  const rows = isQty ? RAW.qtyTable : RAW.amountTable;
+  const search = (tableSearch.value || '').toLowerCase();
+  let rendered = rows.filter((row, idx) => idx < 2 || row.join(' ').toLowerCase().includes(search));
+  if (rendered.length < 2) rendered = rows.slice(0,2);
+  const maxCols = Math.max(...rows.map(r => r.length));
+  const head1 = rendered[0] || [];
+  const head2 = rendered[1] || [];
+  const body = rendered.slice(2);
+  let html = '<table><thead>';
+  html += '<tr>' + Array.from({length:maxCols}, (_,i)=>`<th>${head1[i] || ''}</th>`).join('') + '</tr>';
+  html += '<tr>' + Array.from({length:maxCols}, (_,i)=>`<th>${head2[i] || ''}</th>`).join('') + '</tr>';
+  html += '</thead><tbody>';
+  html += body.map(row => '<tr>' + Array.from({length:maxCols}, (_,i)=>`<td>${row[i] || ''}</td>`).join('') + '</tr>').join('');
+  html += '</tbody></table>';
+  document.getElementById('detailTable').innerHTML = html;
+  document.getElementById('tableTitle').textContent = isQty ? 'State & Product Categories summary - Quantity' : 'State & Product Categories summary - Amount';
+}
+function renderCharts() {
+  const prod = dataset('product');
+  const plant = dataset('plant');
+  const month = dataset('monthly');
+  const quarter = dataset('quarter');
+  const region = dataset('region');
+  const regionType = dataset('regionType');
+  const area = dataset('area');
+
+  donutChart('productDonut', prod);
+  trendChart('monthlyTrend', month);
+  netRankChart('regionNet', region);
+
+  groupedChart('productGrouped', prod);
+  groupedChart('plantGrouped', plant);
+  groupedChart('areaGrouped', area);
+
+  trendChart('quarterTrend', quarter);
+  trendChart('monthlyTrend2', month);
+
+  groupedChart('regionTypeGrouped', regionType);
+  netRankChart('regionFiltered', region);
+  groupedChart('regionGrouped', topNDataset(region));
+}
+function renderAll() {
+  renderCharts();
+  renderTable();
+}
+function activateTabs() {
+  document.querySelectorAll('.tabBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tabBtn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+      setTimeout(renderAll, 80);
+    });
+  });
+}
+function bindControls() {
+  [metricSelect, trendStyleSelect, topNSelect].forEach(el => el.addEventListener('change', renderAll));
+  themeSelect.addEventListener('change', () => {
+    document.body.setAttribute('data-theme', themeSelect.value);
+    setTimeout(renderAll, 80);
+  });
+  if (regionSearch) regionSearch.addEventListener('input', renderAll);
+  tableMetric.addEventListener('change', renderTable);
+  tableSearch.addEventListener('input', renderTable);
+}
+window.addEventListener('load', () => {
+  kpiCards();
+  insightCards();
+  activateTabs();
+  bindControls();
+  renderAll();
+});
+</script>
+</body>
+</html>
